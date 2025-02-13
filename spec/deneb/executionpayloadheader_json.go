@@ -174,7 +174,7 @@ func (e *ExecutionPayloadHeader) UnmarshalJSON(input []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "extra_data")
 		}
-		if len(tmp) > 32 {
+		if len(tmp) > 768 {
 			return errors.New("extra_data: incorrect length")
 		}
 		e.ExtraData = tmp

@@ -74,7 +74,7 @@ func (e *ExecutionPayloadHeader) MarshalSSZTo(buf []byte) (dst []byte, err error
 	dst = ssz.MarshalUint64(dst, e.ExcessBlobGas)
 
 	// Field (10) 'ExtraData'
-	if size := len(e.ExtraData); size > 32 {
+	if size := len(e.ExtraData); size > 768 {
 		err = ssz.ErrBytesLengthFn("ExecutionPayloadHeader.ExtraData", size, 32)
 		return
 	}
@@ -159,7 +159,7 @@ func (e *ExecutionPayloadHeader) UnmarshalSSZ(buf []byte) error {
 	// Field (10) 'ExtraData'
 	{
 		buf = tail[o10:]
-		if len(buf) > 32 {
+		if len(buf) > 768 {
 			return ssz.ErrBytesLength
 		}
 		if cap(e.ExtraData) == 0 {
