@@ -250,7 +250,7 @@ func (s *Erroring) AttestationData(ctx context.Context,
 func (s *Erroring) AttestationPool(ctx context.Context,
 	opts *api.AttestationPoolOpts,
 ) (
-	*api.Response[[]*phase0.Attestation],
+	*api.Response[[]*spec.VersionedAttestation],
 	error,
 ) {
 	if err := s.maybeError(ctx); err != nil {
@@ -503,7 +503,7 @@ func (s *Erroring) BeaconState(ctx context.Context,
 }
 
 // Events feeds requested events with the given topics to the supplied handler.
-func (s *Erroring) Events(ctx context.Context, topics []string, handler consensusclient.EventHandlerFunc) error {
+func (s *Erroring) Events(ctx context.Context, opts *api.EventsOpts) error {
 	if err := s.maybeError(ctx); err != nil {
 		return err
 	}
@@ -512,7 +512,7 @@ func (s *Erroring) Events(ctx context.Context, topics []string, handler consensu
 		return fmt.Errorf("%s@%s does not support this call", s.next.Name(), s.next.Address())
 	}
 
-	return next.Events(ctx, topics, handler)
+	return next.Events(ctx, opts)
 }
 
 // Finality provides the finality given a state ID.
@@ -964,4 +964,22 @@ func (s *Erroring) SyncCommitteeRewards(ctx context.Context,
 	}
 
 	return next.SyncCommitteeRewards(ctx, opts)
+}
+
+// ValidatorLiveness provides the liveness data to the given validators.
+func (s *Erroring) ValidatorLiveness(ctx context.Context,
+	opts *api.ValidatorLivenessOpts,
+) (
+	*api.Response[[]*apiv1.ValidatorLiveness],
+	error,
+) {
+	if err := s.maybeError(ctx); err != nil {
+		return nil, err
+	}
+	next, isNext := s.next.(consensusclient.ValidatorLivenessProvider)
+	if !isNext {
+		return nil, fmt.Errorf("%s@%s does not support this call", s.next.Name(), s.next.Address())
+	}
+
+	return next.ValidatorLiveness(ctx, opts)
 }
