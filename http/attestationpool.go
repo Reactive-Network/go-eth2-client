@@ -37,18 +37,22 @@ func (s *Service) AttestationPool(ctx context.Context,
 	if err := s.assertIsSynced(ctx); err != nil {
 		return nil, err
 	}
+
 	if opts == nil {
 		return nil, client.ErrNoOptions
 	}
 
 	endpoint := "/eth/v2/beacon/pool/attestations"
+
 	queryItems := make([]string, 0)
 	if opts.Slot != nil {
 		queryItems = append(queryItems, fmt.Sprintf("slot=%d", *opts.Slot))
 	}
+
 	if opts.CommitteeIndex != nil {
 		queryItems = append(queryItems, fmt.Sprintf("committee_index=%d", *opts.CommitteeIndex))
 	}
+
 	httpResponse, err := s.get(ctx, endpoint, strings.Join(queryItems, "&"), &opts.Common, false)
 	if err != nil {
 		return nil, err
@@ -111,6 +115,10 @@ func verifyAttestationPool(opts *api.AttestationPoolOpts, data []*spec.Versioned
 			if err := verifyElectraAttestation(opts, datum.Electra); err != nil {
 				return err
 			}
+		case spec.DataVersionFulu:
+			if err := verifyElectraAttestation(opts, datum.Fulu); err != nil {
+				return err
+			}
 		default:
 			return errors.New("unsupported attestation version")
 		}
@@ -123,6 +131,7 @@ func verifyPhase0Attestation(opts *api.AttestationPoolOpts, data *phase0.Attesta
 	if opts.Slot != nil && data.Data.Slot != *opts.Slot {
 		return errors.New("attestation data not for requested slot")
 	}
+
 	if opts.CommitteeIndex != nil && data.Data.Index != *opts.CommitteeIndex {
 		return errors.New("attestation data not for requested committee index")
 	}
@@ -134,6 +143,7 @@ func verifyElectraAttestation(opts *api.AttestationPoolOpts, data *electra.Attes
 	if opts.Slot != nil && data.Data.Slot != *opts.Slot {
 		return errors.New("attestation data not for requested slot")
 	}
+
 	if opts.CommitteeIndex != nil {
 		for _, committeeIndex := range data.CommitteeBits.BitIndices() {
 			if phase0.CommitteeIndex(committeeIndex) == *opts.CommitteeIndex {

@@ -16,12 +16,11 @@ package spec
 import (
 	"errors"
 
-	"github.com/attestantio/go-eth2-client/spec/electra"
-
 	"github.com/attestantio/go-eth2-client/spec/altair"
 	"github.com/attestantio/go-eth2-client/spec/bellatrix"
 	"github.com/attestantio/go-eth2-client/spec/capella"
 	"github.com/attestantio/go-eth2-client/spec/deneb"
+	"github.com/attestantio/go-eth2-client/spec/electra"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 )
 
@@ -34,6 +33,7 @@ type VersionedSignedBeaconBlock struct {
 	Capella   *capella.SignedBeaconBlock
 	Deneb     *deneb.SignedBeaconBlock
 	Electra   *electra.SignedBeaconBlock
+	Fulu      *electra.SignedBeaconBlock
 }
 
 // Slot returns the slot of the signed beacon block.
@@ -75,6 +75,12 @@ func (v *VersionedSignedBeaconBlock) Slot() (phase0.Slot, error) {
 		}
 
 		return v.Electra.Message.Slot, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil {
+			return 0, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Slot, nil
 	default:
 		return 0, errors.New("unknown version")
 	}
@@ -119,6 +125,12 @@ func (v *VersionedSignedBeaconBlock) ProposerIndex() (phase0.ValidatorIndex, err
 		}
 
 		return v.Electra.Message.ProposerIndex, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil {
+			return 0, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.ProposerIndex, nil
 	default:
 		return 0, errors.New("unknown version")
 	}
@@ -160,6 +172,12 @@ func (v *VersionedSignedBeaconBlock) ExecutionBlockHash() (phase0.Hash32, error)
 		}
 
 		return v.Electra.Message.Body.ExecutionPayload.BlockHash, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil || v.Fulu.Message.Body.ExecutionPayload == nil {
+			return phase0.Hash32{}, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.ExecutionPayload.BlockHash, nil
 	default:
 		return phase0.Hash32{}, errors.New("unknown version")
 	}
@@ -201,6 +219,12 @@ func (v *VersionedSignedBeaconBlock) ExecutionBlockNumber() (uint64, error) {
 		}
 
 		return v.Electra.Message.Body.ExecutionPayload.BlockNumber, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil || v.Fulu.Message.Body.ExecutionPayload == nil {
+			return 0, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.ExecutionPayload.BlockNumber, nil
 	default:
 		return 0, errors.New("unknown version")
 	}
@@ -246,6 +270,12 @@ func (v *VersionedSignedBeaconBlock) ExecutionTransactions() ([]bellatrix.Transa
 		}
 
 		return v.Electra.Message.Body.ExecutionPayload.Transactions, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil || v.Fulu.Message.Body.ExecutionPayload == nil {
+			return nil, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.ExecutionPayload.Transactions, nil
 	default:
 		return nil, errors.New("unknown version")
 	}
@@ -290,6 +320,12 @@ func (v *VersionedSignedBeaconBlock) Graffiti() ([32]byte, error) {
 		}
 
 		return v.Electra.Message.Body.Graffiti, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return [32]byte{}, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.Graffiti, nil
 	default:
 		return [32]byte{}, errors.New("unknown version")
 	}
@@ -384,6 +420,20 @@ func (v *VersionedSignedBeaconBlock) Attestations() ([]*VersionedAttestation, er
 		}
 
 		return versionedAttestations, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return nil, errors.New("no fulu block")
+		}
+
+		versionedAttestations := make([]*VersionedAttestation, len(v.Fulu.Message.Body.Attestations))
+		for i, attestation := range v.Fulu.Message.Body.Attestations {
+			versionedAttestations[i] = &VersionedAttestation{
+				Version: DataVersionFulu,
+				Fulu:    attestation,
+			}
+		}
+
+		return versionedAttestations, nil
 	default:
 		return nil, errors.New("unknown version")
 	}
@@ -428,6 +478,12 @@ func (v *VersionedSignedBeaconBlock) Root() (phase0.Root, error) {
 		}
 
 		return v.Electra.Message.HashTreeRoot()
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil {
+			return phase0.Root{}, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.HashTreeRoot()
 	default:
 		return phase0.Root{}, errors.New("unknown version")
 	}
@@ -472,6 +528,12 @@ func (v *VersionedSignedBeaconBlock) BodyRoot() (phase0.Root, error) {
 		}
 
 		return v.Electra.Message.Body.HashTreeRoot()
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return phase0.Root{}, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.HashTreeRoot()
 	default:
 		return phase0.Root{}, errors.New("unknown version")
 	}
@@ -516,6 +578,12 @@ func (v *VersionedSignedBeaconBlock) ParentRoot() (phase0.Root, error) {
 		}
 
 		return v.Electra.Message.ParentRoot, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil {
+			return phase0.Root{}, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.ParentRoot, nil
 	default:
 		return phase0.Root{}, errors.New("unknown version")
 	}
@@ -560,6 +628,12 @@ func (v *VersionedSignedBeaconBlock) StateRoot() (phase0.Root, error) {
 		}
 
 		return v.Electra.Message.StateRoot, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil {
+			return phase0.Root{}, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.StateRoot, nil
 	default:
 		return phase0.Root{}, errors.New("unknown version")
 	}
@@ -604,6 +678,12 @@ func (v *VersionedSignedBeaconBlock) RandaoReveal() (phase0.BLSSignature, error)
 		}
 
 		return v.Electra.Message.Body.RANDAOReveal, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return phase0.BLSSignature{}, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.RANDAOReveal, nil
 	default:
 		return phase0.BLSSignature{}, errors.New("unknown version")
 	}
@@ -648,6 +728,12 @@ func (v *VersionedSignedBeaconBlock) ETH1Data() (*phase0.ETH1Data, error) {
 		}
 
 		return v.Electra.Message.Body.ETH1Data, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return nil, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.ETH1Data, nil
 	default:
 		return nil, errors.New("unknown version")
 	}
@@ -692,6 +778,12 @@ func (v *VersionedSignedBeaconBlock) Deposits() ([]*phase0.Deposit, error) {
 		}
 
 		return v.Electra.Message.Body.Deposits, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return nil, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.Deposits, nil
 	default:
 		return nil, errors.New("unknown version")
 	}
@@ -736,6 +828,12 @@ func (v *VersionedSignedBeaconBlock) VoluntaryExits() ([]*phase0.SignedVoluntary
 		}
 
 		return v.Electra.Message.Body.VoluntaryExits, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return nil, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.VoluntaryExits, nil
 	default:
 		return nil, errors.New("unknown version")
 	}
@@ -830,6 +928,20 @@ func (v *VersionedSignedBeaconBlock) AttesterSlashings() ([]VersionedAttesterSla
 		}
 
 		return versionedAttesterSlashings, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return nil, errors.New("no fulu block")
+		}
+
+		versionedAttesterSlashings := make([]VersionedAttesterSlashing, len(v.Fulu.Message.Body.AttesterSlashings))
+		for i, attesterSlashing := range v.Fulu.Message.Body.AttesterSlashings {
+			versionedAttesterSlashings[i] = VersionedAttesterSlashing{
+				Version: DataVersionFulu,
+				Fulu:    attesterSlashing,
+			}
+		}
+
+		return versionedAttesterSlashings, nil
 	default:
 		return nil, errors.New("unknown version")
 	}
@@ -874,6 +986,12 @@ func (v *VersionedSignedBeaconBlock) ProposerSlashings() ([]*phase0.ProposerSlas
 		}
 
 		return v.Electra.Message.Body.ProposerSlashings, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return nil, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.ProposerSlashings, nil
 	default:
 		return nil, errors.New("unknown version")
 	}
@@ -914,6 +1032,12 @@ func (v *VersionedSignedBeaconBlock) SyncAggregate() (*altair.SyncAggregate, err
 		}
 
 		return v.Electra.Message.Body.SyncAggregate, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return nil, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.SyncAggregate, nil
 	default:
 		return nil, errors.New("unknown version")
 	}
@@ -946,6 +1070,12 @@ func (v *VersionedSignedBeaconBlock) BLSToExecutionChanges() ([]*capella.SignedB
 		}
 
 		return v.Electra.Message.Body.BLSToExecutionChanges, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return nil, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.BLSToExecutionChanges, nil
 	default:
 		return nil, errors.New("unknown version")
 	}
@@ -984,6 +1114,12 @@ func (v *VersionedSignedBeaconBlock) Withdrawals() ([]*capella.Withdrawal, error
 		}
 
 		return v.Electra.Message.Body.ExecutionPayload.Withdrawals, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil || v.Fulu.Message.Body.ExecutionPayload == nil {
+			return nil, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.ExecutionPayload.Withdrawals, nil
 	default:
 		return nil, errors.New("unknown version")
 	}
@@ -1012,6 +1148,12 @@ func (v *VersionedSignedBeaconBlock) BlobKZGCommitments() ([]deneb.KZGCommitment
 		}
 
 		return v.Electra.Message.Body.BlobKZGCommitments, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return nil, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.BlobKZGCommitments, nil
 	default:
 		return nil, errors.New("unknown version")
 	}
@@ -1038,9 +1180,63 @@ func (v *VersionedSignedBeaconBlock) ExecutionRequests() (*electra.ExecutionRequ
 		}
 
 		return v.Electra.Message.Body.ExecutionRequests, nil
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return nil, errors.New("no fulu block")
+		}
+
+		return v.Fulu.Message.Body.ExecutionRequests, nil
 	default:
 		return nil, errors.New("unknown version")
 	}
+}
+
+// ExecutionPayload returns the execution payload of the signed beacon block.
+func (v *VersionedSignedBeaconBlock) ExecutionPayload() (*VersionedExecutionPayload, error) {
+	versionedExecutionPayload := &VersionedExecutionPayload{
+		Version: v.Version,
+	}
+
+	switch v.Version {
+	case DataVersionPhase0:
+		return nil, errors.New("no execution payload in phase0")
+	case DataVersionAltair:
+		return nil, errors.New("no execution payload in altair")
+	case DataVersionBellatrix:
+		if v.Bellatrix == nil || v.Bellatrix.Message == nil || v.Bellatrix.Message.Body == nil {
+			return nil, errors.New("no bellatrix block")
+		}
+
+		versionedExecutionPayload.Bellatrix = v.Bellatrix.Message.Body.ExecutionPayload
+	case DataVersionCapella:
+		if v.Capella == nil || v.Capella.Message == nil || v.Capella.Message.Body == nil {
+			return nil, errors.New("no capella block")
+		}
+
+		versionedExecutionPayload.Capella = v.Capella.Message.Body.ExecutionPayload
+	case DataVersionDeneb:
+		if v.Deneb == nil || v.Deneb.Message == nil || v.Deneb.Message.Body == nil {
+			return nil, errors.New("no deneb block")
+		}
+
+		versionedExecutionPayload.Deneb = v.Deneb.Message.Body.ExecutionPayload
+	case DataVersionElectra:
+		if v.Electra == nil || v.Electra.Message == nil || v.Electra.Message.Body == nil {
+			return nil, errors.New("no electra block")
+		}
+
+		versionedExecutionPayload.Electra = v.Electra.Message.Body.ExecutionPayload
+	case DataVersionFulu:
+		if v.Fulu == nil || v.Fulu.Message == nil || v.Fulu.Message.Body == nil {
+			return nil, errors.New("no fulu block")
+		}
+
+		versionedExecutionPayload.Fulu = v.Fulu.Message.Body.ExecutionPayload
+	default:
+		return nil, errors.New("unknown version")
+	}
+
+	return versionedExecutionPayload, nil
 }
 
 // String returns a string version of the structure.
@@ -1082,6 +1278,12 @@ func (v *VersionedSignedBeaconBlock) String() string {
 		}
 
 		return v.Electra.String()
+	case DataVersionFulu:
+		if v.Fulu == nil {
+			return ""
+		}
+
+		return v.Fulu.String()
 	default:
 		return "unknown version"
 	}

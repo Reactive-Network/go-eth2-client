@@ -19,13 +19,12 @@ import (
 	"errors"
 	"fmt"
 
-	apiv1electra "github.com/attestantio/go-eth2-client/api/v1/electra"
-
 	client "github.com/attestantio/go-eth2-client"
 	"github.com/attestantio/go-eth2-client/api"
 	apiv1bellatrix "github.com/attestantio/go-eth2-client/api/v1/bellatrix"
 	apiv1capella "github.com/attestantio/go-eth2-client/api/v1/capella"
 	apiv1deneb "github.com/attestantio/go-eth2-client/api/v1/deneb"
+	apiv1electra "github.com/attestantio/go-eth2-client/api/v1/electra"
 	"github.com/attestantio/go-eth2-client/spec"
 	"go.opentelemetry.io/otel"
 )
@@ -45,9 +44,11 @@ func (s *Service) BlindedProposal(ctx context.Context,
 	if err := s.assertIsSynced(ctx); err != nil {
 		return nil, err
 	}
+
 	if opts == nil {
 		return nil, client.ErrNoOptions
 	}
+
 	if opts.Slot == 0 {
 		return nil, errors.Join(errors.New("no slot specified"), client.ErrInvalidOptions)
 	}
@@ -62,6 +63,7 @@ func (s *Service) BlindedProposal(ctx context.Context,
 				client.ErrInvalidOptions,
 			)
 		}
+
 		query = fmt.Sprintf("%s&skip_randao_verification", query)
 	}
 
@@ -71,6 +73,7 @@ func (s *Service) BlindedProposal(ctx context.Context,
 	}
 
 	var response *api.Response[*api.VersionedBlindedProposal]
+
 	switch res.contentType {
 	case ContentTypeSSZ:
 		response, err = s.blindedProposalFromSSZ(res)
@@ -79,6 +82,7 @@ func (s *Service) BlindedProposal(ctx context.Context,
 	default:
 		return nil, fmt.Errorf("unhandled content type %v", res.contentType)
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +92,7 @@ func (s *Service) BlindedProposal(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+
 	if blockSlot != opts.Slot {
 		return nil, errors.Join(
 			fmt.Errorf("blinded beacon block proposal for slot %d; expected %d", blockSlot, opts.Slot),
@@ -102,6 +107,7 @@ func (s *Service) BlindedProposal(ctx context.Context,
 		if err != nil {
 			return nil, err
 		}
+
 		if !bytes.Equal(blockRandaoReveal[:], opts.RandaoReveal[:]) {
 			return nil, errors.Join(
 				fmt.Errorf(
@@ -146,6 +152,11 @@ func (*Service) blindedProposalFromSSZ(res *httpResponse) (*api.Response[*api.Ve
 		if err := response.Data.Electra.UnmarshalSSZ(res.body); err != nil {
 			return nil, errors.Join(errors.New("failed to decode electra blinded beacon block proposal"), err)
 		}
+	case spec.DataVersionFulu:
+		response.Data.Fulu = &apiv1electra.BlindedBeaconBlock{}
+		if err := response.Data.Fulu.UnmarshalSSZ(res.body); err != nil {
+			return nil, errors.Join(errors.New("failed to decode fulu blinded beacon block proposal"), err)
+		}
 	default:
 		return nil, fmt.Errorf("unhandled block proposal version %s", res.consensusVersion)
 	}
@@ -161,6 +172,7 @@ func (*Service) blindedProposalFromJSON(res *httpResponse) (*api.Response[*api.V
 	}
 
 	var err error
+
 	switch res.consensusVersion {
 	case spec.DataVersionBellatrix:
 		response.Data.Bellatrix, response.Metadata, err = decodeJSONResponse(
@@ -182,9 +194,15 @@ func (*Service) blindedProposalFromJSON(res *httpResponse) (*api.Response[*api.V
 			bytes.NewReader(res.body),
 			&apiv1electra.BlindedBeaconBlock{},
 		)
+	case spec.DataVersionFulu:
+		response.Data.Fulu, response.Metadata, err = decodeJSONResponse(
+			bytes.NewReader(res.body),
+			&apiv1electra.BlindedBeaconBlock{},
+		)
 	default:
 		return nil, fmt.Errorf("unsupported version %s", res.consensusVersion)
 	}
+
 	if err != nil {
 		return nil, err
 	}

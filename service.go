@@ -23,6 +23,7 @@ import (
 	"github.com/attestantio/go-eth2-client/spec/altair"
 	"github.com/attestantio/go-eth2-client/spec/capella"
 	"github.com/attestantio/go-eth2-client/spec/deneb"
+	"github.com/attestantio/go-eth2-client/spec/electra"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 )
 
@@ -115,6 +116,16 @@ type SignedBeaconBlockProvider interface {
 		*api.Response[*spec.VersionedSignedBeaconBlock],
 		error,
 	)
+}
+
+// BlobsProvider is the interface for providing blobs for a given beacon block.
+type BlobsProvider interface {
+	// Blobs fetches the blobs given a block ID.
+	Blobs(ctx context.Context,
+		opts *api.BlobsOpts,
+	) (
+		*api.Response[apiv1.Blobs],
+		error)
 }
 
 // BlobSidecarsProvider is the interface for providing blobs for a given beacon block.
@@ -596,6 +607,39 @@ type VoluntaryExitPoolProvider interface {
 		opts *api.VoluntaryExitPoolOpts,
 	) (
 		*api.Response[[]*phase0.SignedVoluntaryExit],
+		error,
+	)
+}
+
+// PendingDepositProvider is the interface for providing pending deposit information.
+type PendingDepositProvider interface {
+	// PendingDeposits provides the pending deposits for a given state.
+	PendingDeposits(ctx context.Context,
+		opts *api.PendingDepositsOpts,
+	) (
+		*api.Response[[]*electra.PendingDeposit],
+		error,
+	)
+}
+
+// PendingConsolidationsProvider is the interface for providing pending consolidations.
+type PendingConsolidationsProvider interface {
+	// PendingConsolidations provides the pending consolidations for a given state.
+	PendingConsolidations(ctx context.Context,
+		opts *api.PendingConsolidationsOpts,
+	) (
+		*api.Response[[]*electra.PendingConsolidation],
+		error,
+	)
+}
+
+// PendingPartialWithdrawalsProvider is the interface for providing pending partial withdrawals.
+type PendingPartialWithdrawalsProvider interface {
+	// PendingPartialWithdrawals provides the pending partial withdrawals for a given state.
+	PendingPartialWithdrawals(ctx context.Context,
+		opts *api.PendingPartialWithdrawalsOpts,
+	) (
+		*api.Response[[]*electra.PendingPartialWithdrawal],
 		error,
 	)
 }

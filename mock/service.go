@@ -21,6 +21,7 @@ import (
 	apiv1 "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/altair"
+	"github.com/attestantio/go-eth2-client/spec/electra"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -69,6 +70,9 @@ type Service struct {
 	NodePeersFunc                 func(context.Context, *api.NodePeersOpts) (*api.Response[[]*apiv1.Peer], error)
 	NodeSyncingFunc               func(context.Context, *api.NodeSyncingOpts) (*api.Response[*apiv1.SyncState], error)
 	NodeVersionFunc               func(context.Context, *api.NodeVersionOpts) (*api.Response[string], error)
+	PendingDepositsFunc           func(context.Context, *api.PendingDepositsOpts) (*api.Response[[]*electra.PendingDeposit], error)
+	PendingConsolidationsFunc     func(context.Context, *api.PendingConsolidationsOpts) (*api.Response[[]*electra.PendingConsolidation], error)
+	PendingPartialWithdrawalsFunc func(context.Context, *api.PendingPartialWithdrawalsOpts) (*api.Response[[]*electra.PendingPartialWithdrawal], error)
 	ProposalFunc                  func(context.Context, *api.ProposalOpts) (*api.Response[*api.VersionedProposal], error)
 	ProposerDutiesFunc            func(context.Context, *api.ProposerDutiesOpts) (*api.Response[[]*apiv1.ProposerDuty], error)
 	SignedBeaconBlockFunc         func(context.Context, *api.SignedBeaconBlockOpts) (*api.Response[*spec.VersionedSignedBeaconBlock], error)
@@ -125,22 +129,6 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 
 // fetchStaticValues fetches values that never change.
 // This caches the values, avoiding future API calls.
-func (s *Service) fetchStaticValues(ctx context.Context) error {
-	if _, err := s.Genesis(ctx, &api.GenesisOpts{}); err != nil {
-		return errors.Wrap(err, "failed to fetch genesis")
-	}
-	//	if _, err := s.Spec(ctx); err != nil {
-	//		return errors.Wrap(err, "failed to fetch spec")
-	//	}
-	//	if _, err := s.DepositContract(ctx); err != nil {
-	//		return errors.Wrap(err, "failed to fetch deposit contract")
-	//	}
-	//	if _, err := s.ForkSchedule(ctx); err != nil {
-	//		return errors.Wrap(err, "failed to fetch fork schedule")
-	//	}
-
-	return nil
-}
 
 // Name provides the name of the service.
 func (*Service) Name() string {
@@ -160,6 +148,25 @@ func (*Service) IsActive() bool {
 // IsSynced returns true if the client is synced.
 func (s *Service) IsSynced() bool {
 	return s.SyncDistance == 0
+}
+
+// fetchStaticValues fetches values that never change.
+// This caches the values, avoiding future API calls.
+func (s *Service) fetchStaticValues(ctx context.Context) error {
+	if _, err := s.Genesis(ctx, &api.GenesisOpts{}); err != nil {
+		return errors.Wrap(err, "failed to fetch genesis")
+	}
+	//	if _, err := s.Spec(ctx); err != nil {
+	//		return errors.Wrap(err, "failed to fetch spec")
+	//	}
+	//	if _, err := s.DepositContract(ctx); err != nil {
+	//		return errors.Wrap(err, "failed to fetch deposit contract")
+	//	}
+	//	if _, err := s.ForkSchedule(ctx); err != nil {
+	//		return errors.Wrap(err, "failed to fetch fork schedule")
+	//	}
+
+	return nil
 }
 
 // close closes the service, freeing up resources.

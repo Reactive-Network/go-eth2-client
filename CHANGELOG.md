@@ -1,3 +1,44 @@
+0.28.0:
+  - update dependency for go-bitfield to get from offchain instead of prysmatic org
+
+0.27.2:
+  - add /eth/v1/beacon/blobs/ endpoint support
+  - update go version to 1.25
+  - updated spec conformance tests for latest forks
+  - updated linters and corresponding fixes
+
+0.27.1:
+  - set max possible blob count to 72
+
+0.27.0:
+  - support fulu
+    - introduce data column sidecar event api and corresponding event handler
+    - add blockcontents and signedblockcontents for fulu api
+    - add beaconstate container updates as per spec
+    - add fulu cases for all versioned spec, versioned api and http functions
+
+0.26.0:
+  - refactor http.Spec to allow more complex types in the keys
+  - support pending consolidations and deposits
+
+0.25.2:
+  - add multi/submitblindedproposal
+
+0.25.1:
+  - add Merkle tree and proof generation utils
+  - add convenience methods on versioned beaconstate for field access and proofs:
+    - ValidatorAtIndex
+    - ValidatorBalance
+    - FieldIndex
+    - FieldGeneralizedIndex
+    - FieldRoot
+    - FieldTree
+    - ProveField
+    - VerifyFieldProof
+
+0.25.0:
+  - update attestation pool endpoint to receive versioned attestations
+
 0.24.2:
   - support single_attestation event
   - support change to attestation event; this event now emits a spec.VersionedAttestation

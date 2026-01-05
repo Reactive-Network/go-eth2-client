@@ -32,8 +32,10 @@ func (s *Service) SubmitBeaconBlock(ctx context.Context, block *spec.VersionedSi
 		return err
 	}
 
-	var specJSON []byte
-	var err error
+	var (
+		specJSON []byte
+		err      error
+	)
 
 	if block == nil {
 		return errors.Join(errors.New("no block supplied"), client.ErrInvalidOptions)
@@ -52,9 +54,12 @@ func (s *Service) SubmitBeaconBlock(ctx context.Context, block *spec.VersionedSi
 		specJSON, err = json.Marshal(block.Deneb)
 	case spec.DataVersionElectra:
 		specJSON, err = json.Marshal(block.Electra)
+	case spec.DataVersionFulu:
+		specJSON, err = json.Marshal(block.Fulu)
 	default:
 		err = errors.New("unknown block version")
 	}
+
 	if err != nil {
 		return errors.Join(errors.New("failed to marshal JSON"), err)
 	}
